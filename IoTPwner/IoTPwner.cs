@@ -20,6 +20,7 @@ namespace IoTPwner
         
         private string username, password = "";
         private string creds = "";
+        
         public IOTPWNER(string targetsPath, string username, string password)
         {
             if (targetsPath == null || password == null || username == null)
