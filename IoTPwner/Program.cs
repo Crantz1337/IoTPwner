@@ -14,6 +14,7 @@ namespace IoTPwner
         static string targetsPath = "C:\\Users\\johan\\Desktop\\targets.txt";
         static string username = "admin";
         static string password = "admin";
+        
         static void Main(string[] args)
         {
             var pwner = new IOTPWNER(targetsPath, username, password);
