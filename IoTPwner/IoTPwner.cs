@@ -45,7 +45,7 @@ namespace IoTPwner
 
         private StreamReader getTargets(string targetsPath) => new StreamReader(File.OpenRead(targetsPath));
 
-        public void start() 
+        public async void start() 
         {       
             Console.WriteLine("[Running...] Press ENTER to exit");
 
@@ -70,7 +70,8 @@ namespace IoTPwner
                     Console.WriteLine(e.Message);
                     continue;
                 }                
-                    basicAuthentication(ip, ports);
+                   
+                basicAuthentication(ip, ports);
             }
         }
 
@@ -82,8 +83,8 @@ namespace IoTPwner
                 foreach (string port in ports) 
                 {
                     string uri = $"http://{ip}:{port}";
-                    var response = await invalidClient.GetAsync(uri);
-                    if (response.StatusCode != HttpStatusCode.OK)
+                    var response = await invalidClient.GetAsync(uri);                
+                    if (response.StatusCode == HttpStatusCode.Unauthorized)
                     {
                         response = await client.GetAsync(uri);
                         if (response.StatusCode == HttpStatusCode.OK)
