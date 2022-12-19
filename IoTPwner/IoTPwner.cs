@@ -20,7 +20,6 @@ namespace IoTPwner
         
         private string username, password = "";
         private string creds = "";
-        
         public IOTPWNER(string targetsPath, string username, string password)
         {
             if (targetsPath == null || password == null || username == null)
@@ -70,26 +69,27 @@ namespace IoTPwner
                 {
                     Console.WriteLine(e.Message);
                     continue;
-                }
-                
-                // For every port which the service we want to check for default login on
-                foreach (string port in ports)
-                    basicAuthentication($"http://{ip}:{port}/");
+                }                
+                    basicAuthentication(ip, ports);
             }
         }
 
-        private async void basicAuthentication(string uri)
+        private async void basicAuthentication(string ip, List<string> ports)
         {
+            // For every port which the service we want to check for default login on
             try
             {
-                var response = await invalidClient.GetAsync(uri);
-                if (response.StatusCode != HttpStatusCode.OK)
+                foreach (string port in ports) 
                 {
-                    response = await client.GetAsync(uri);
-                    if (response.StatusCode == HttpStatusCode.OK)
-                        Console.WriteLine($"{uri} {username}:{password}");
+                    string uri = $"http://{ip}:{port}";
+                    var response = await invalidClient.GetAsync(uri);
+                    if (response.StatusCode != HttpStatusCode.OK)
+                    {
+                        response = await client.GetAsync(uri);
+                        if (response.StatusCode == HttpStatusCode.OK)
+                            Console.WriteLine($"{uri} {username}:{password}");
+                    }
                 }
-
             }
             catch (Exception) { }
         }
