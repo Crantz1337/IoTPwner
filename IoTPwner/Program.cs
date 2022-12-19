@@ -1,4 +1,4 @@
-﻿using System.Net;
+using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Runtime.CompilerServices;
@@ -16,9 +16,9 @@ namespace IoTPwner
         static string password = "admin";
         static void Main(string[] args)
         {
-            var pwner = new IOTPWNER(targetsPath, username, password, IOTPWNER.AuthType.Basic);
+            var pwner = new IOTPWNER(targetsPath, username, password);
             pwner.start();
-
+            
             Console.ReadLine();
         }
     }
