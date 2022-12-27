@@ -18,81 +18,75 @@ namespace IoTPwner
         private HttpClient client, invalidClient; // One client is for preventing false positives during authentication.
         private StreamReader reader; // For reading each line in targets file
         
-        private string username, password = "";
         private string creds = "";
+
+        List<Task<int>> tasks = new List<Task<int>>();
         public IOTPWNER(string targetsPath, string username, string password)
         {
-            if (targetsPath == null || password == null || username == null)
-                throw new ArgumentNullException("Arguments can't be empty");
+            creds = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{username}:{password}"));
+            reader = getTargets(targetsPath);
 
-            this.username = username;
-            this.password = password;
+            client = new HttpClient(); client.Timeout = new TimeSpan(0, 0, 5); client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", creds);
+            invalidClient = new HttpClient(); invalidClient.Timeout = new TimeSpan(0, 0, 5); invalidClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", "blablablabla");
 
-            try
-            {
-                creds = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{username}:{password}"));
-                reader = getTargets(targetsPath);
-
-                client = new HttpClient(); client.Timeout = new TimeSpan(0, 0, 5); client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", creds);
-                invalidClient = new HttpClient(); invalidClient.Timeout = new TimeSpan(0, 0, 5); invalidClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", "blablablabla");
-            }
-            catch (Exception)
-            {
-                throw;
-            }
-            
+            UI.coloredOutput($"[!] Checking for combinations of \"{username}:{password}\"\n", ConsoleColor.Yellow);
         }
 
         private StreamReader getTargets(string targetsPath) => new StreamReader(File.OpenRead(targetsPath));
 
-        public async void start() 
-        {       
-            Console.WriteLine("[Running...] Press ENTER to exit");
+        public void start()
+        {
 
             while (true)
             {
+
                 string line = reader.ReadLine();
                 if (line == null)
                     break;
 
                 string ip, portsJson;
                 List<string> ports;
-                try
-                {
-                    ip = line.Substring(0, line.IndexOf(' '));
-                    portsJson = line.Substring(line.IndexOf("["));
-                    ports = new List<string>();
 
-                    ports.AddRange(JsonSerializer.Deserialize<List<string>>(portsJson));
-                }
-                catch (Exception e)
-                {
-                    Console.WriteLine(e.Message);
-                    continue;
-                }                
-                   
-                basicAuthentication(ip, ports);
+                ip = line.Substring(0, line.IndexOf(' '));
+                portsJson = line.Substring(line.IndexOf("["));
+                ports = new List<string>();
+
+                ports.AddRange(JsonSerializer.Deserialize<List<string>>(portsJson));
+
+                tasks.Add(basicAuthentication(ip, ports));
+
             }
+
+            Task.WaitAll(tasks.ToArray());
         }
 
-        private async void basicAuthentication(string ip, List<string> ports)
+        private async Task<int> basicAuthentication(string ip, List<string> ports)
         {
             // For every port which the service we want to check for default login on
-            try
-            {
-                foreach (string port in ports) 
+ 
+                foreach (string port in ports)
                 {
                     string uri = $"http://{ip}:{port}";
-                    var response = await invalidClient.GetAsync(uri);                
-                    if (response.StatusCode == HttpStatusCode.Unauthorized)
+
+                    try
                     {
-                        response = await client.GetAsync(uri);
-                        if (response.StatusCode == HttpStatusCode.OK)
-                            Console.WriteLine($"{uri} {username}:{password}");
+                        var response = await invalidClient.GetAsync(uri);
+                        if (response.StatusCode == HttpStatusCode.Unauthorized)
+                        {
+                            response = await client.GetAsync(uri);
+                            if (response.StatusCode == HttpStatusCode.OK)
+                            {
+                                UI.coloredOutput($"[+] {uri}\n", ConsoleColor.Green);
+                                return 0;
+                            }
+                                
+                        }
                     }
+                    catch (Exception) { continue; }
+                                 
                 }
-            }
-            catch (Exception) { }
+            
+            return 1;     
         }
 
     }
